@@ -4,6 +4,7 @@ module HTTP
 
     def post_init # called from within initialize
       @response = HTTP::Response.new
+      self.comm_inactivity_timeout = 5
     end
 
     def send_request(request)
@@ -26,12 +27,19 @@ module HTTP
 
       if @response['Connection'] =~ /close/i
         close_connection
-        EM::stop_event_loop
       end
+
+      EM::stop_event_loop
     end
 
     def unbind
       @response.finalize
+
+      unless @response.status
+        @response.errors[:connection] = "Couldn't establish connection"
+      end
+
+      EM::stop_event_loop
     end
 
     def send_line(line)
