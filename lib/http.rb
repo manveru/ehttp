@@ -14,6 +14,7 @@ require 'http/response'
 require 'http/header_hash'
 require 'http/connection'
 require 'http/client'
+require 'http/util'
 
 module HTTP
   def self.connect(uri) Request.new(uri).connect end
