@@ -20,6 +20,45 @@ module HTTP
       end
     end
 
+    # Returns resulting proxy URI if parameters are valid or false if proxy has
+    # been disabled
+    #
+    # Set proxy by passing a string or URI, it will be sanitized and coerced
+    # into http unless you specify https by prefixing with https://
+    #
+    #     http.use_proxy('https://proxy:8000')
+    #     http.use_proxy('user@proxy:8000')
+    #     http.use_proxy('http://user:password@proxy:8000')
+    #
+    #
+    # Set proxy by passing explicit arguments, this doesn't allow for https (yet)
+    #
+    #     http.use_proxy('localhost', 8000)
+    #     http.use_proxy('localhost', 8000, 'user')
+    #     http.use_proxy('localhost', 8000, 'user', 'password')
+    #
+    #
+    # Passing false|nil or no arguments at all will disable usage of proxy
+    # explicitly
+    #
+    # --
+    # Internally the @proxy is stored as URI or false
+
+    def use_proxy(uri_or_host = nil, port = nil, user = nil, password = nil)
+      if uri_or_host
+        if port
+          @proxy = URI("http://#{uri_or_host}")
+          @proxy.port = port.to_i
+          @proxy.user = user.to_s
+          @proxy.password = password.to_s
+        else
+          @proxy = sanitize_uri(uri)
+        end
+      else
+        @proxy = false
+      end
+    end
+
     def connect; send_request :connect; end
     def delete;  send_request :delete;  end
     def get;     send_request :get;     end
