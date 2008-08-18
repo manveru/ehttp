@@ -72,7 +72,7 @@ module HTTP
       self.method = method.to_s.upcase
       response = nil
 
-      HTTP::Connection.open(uri.host, uri.port) do |conn|
+      Connection.open(uri.host, uri.port) do |conn|
         conn.send_request(self)
         response = conn.response
       end
@@ -90,12 +90,19 @@ module HTTP
 
     private
 
+    # Returns URI
+    # Prepends http:// if scheme is missing
+    # Sets '/' as path if no path is found
+
     def sanitize_uri(obj)
       case obj
       when URI
         obj
       else
-        URI(obj.to_str)
+        string = obj.to_str.sub(%r'^(?!https?://)', 'http://')
+        uri = URI(string)
+        uri = URI("#{string}/") if uri.path.strip.empty?
+        uri
       end
     end
   end

@@ -13,10 +13,11 @@ module HTTP
   class Response
     # Status-Line
     attr_reader :version, :status, :phrase
-    attr_reader :headers, :body
+    attr_reader :headers, :body, :errors
 
     def initialize
       @headers = HeaderHash.new
+      @errors = {}
       @body = ''
     end
 
