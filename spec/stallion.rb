@@ -11,7 +11,7 @@ module Stallion
     end
 
     def match?(request)
-      method = request['REQUEST_METHOD']
+      method = request.env['REQUEST_METHOD']
       right_method = @methods.empty? or @methods.include?(method)
     end
   end
@@ -32,9 +32,7 @@ module Stallion
     def call(request, response)
       @request, @response = request, response
       @boxes.each do |(path, methods), mount|
-        if mount.match?(request)
-          mount.ride
-        end
+        mount.ride if mount.match?(request)
       end
     end
   end
@@ -63,12 +61,16 @@ module Stallion
   end
 end
 
-Stallion.saddle :spec do |stable|
-  stable.in '/' do
-    stable.response.body << 'Hello, World!'
-  end
-end
+Thread.abort_on_exception = true
 
 Thread.new do
   Stallion.run :Host => '127.0.0.1', :Port => 8080
 end
+
+def test_conn(host, port)
+  TCPSocket.open(host, port){ true }
+rescue Errno::ECONNREFUSED
+  false
+end
+
+sleep 0.1 until test_conn('localhost', 8080)

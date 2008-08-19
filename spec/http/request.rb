@@ -3,16 +3,6 @@ require 'spec/helper'
 # Saddle the horse, we go for a ride
 require 'spec/stallion'
 
-conn = false
-until conn
-  got = HTTP::Request.new('localhost:8080').get
-  conn = got.errors.empty?
-  pp got
-  sleep 0.1
-end
-
-# Why does this still fail randomly even after previous succeeded?
-
 describe HTTP::Request do
   describe 'perform HTTP methods' do
     http = HTTP::Request.new('http://localhost:8080/')
