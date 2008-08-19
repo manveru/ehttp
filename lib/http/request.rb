@@ -1,23 +1,58 @@
 module HTTP
   class Request
-    attr_accessor :uri, :method, :version
+    USER_AGENT = 'sHTTP 0.1'
+    VERSION = 'HTTP/1.1'
+    METHODS = %w[
+      CONNECT DELETE GET HEAD OPTIONS POST PUT TRACE
+    ]
+
+    attr_accessor :uri, :method, :version, :body, :user_agent
     attr_reader :headers
 
     def initialize(uri, headers = {})
       @headers = HeaderHash.new(headers)
-      @method = 'GET'
-      @version = 'HTTP/1.1'
       @uri = sanitize_uri(uri)
+
+      @user_agent, @version = USER_AGENT, VERSION
+      @body = nil
+      @method = 'GET'
+    end
+
+    METHODS.each do |m|
+      method = m.downcase
+
+      define_method(method){ send_request(method) }
+      define_method("#{method}?"){ self.method == m }
     end
 
     def each
-      yield "#{method} #{uri.path} #{version}"
+      @send_body = Body.new(self, @body)
+      prepare_headers
 
-      headers['host'] ||= "#{uri.host}:#{uri.port}"
+      yield request_line
+      each_header{|header| yield header }
+      yield("\r\n")
+      each_body{|body| yield(body) }
+    end
 
+    def prepare_headers
+      self['accept'] ||= '*/*'
+      self['user-agent'] ||= USER_AGENT
+      self['expect'] ||= '100-continue' if post? or put?
+    end
+
+    def request_line
+      "#{method} #{uri.path} #{version}\r\n"
+    end
+
+    def each_header
       headers.each do |key, value|
-        yield "#{key}: #{value}"
+        yield "#{key}: #{value}\r\n" if key and value
       end
+    end
+
+    def each_body
+      @send_body.each{|chunk| yield chunk }
     end
 
     # Returns resulting proxy URI if parameters are valid or false if proxy has
@@ -59,25 +94,32 @@ module HTTP
       end
     end
 
-    def connect; send_request :connect; end
-    def delete;  send_request :delete;  end
-    def get;     send_request :get;     end
-    def head;    send_request :head;    end
-    def options; send_request :options; end
-    def post;    send_request :post;    end
-    def put;     send_request :put;     end
-    def trace;   send_request :trace;   end
-
+    # TODO: refactor, this is not working out
     def send_request(method = 'GET')
-      self.method = method.to_s.upcase
+      self.method = method
       response = nil
 
-      Connection.open(uri.host, uri.port) do |conn|
-        conn.send_request(self)
-        response = conn.response
+      if @connection
+        response = @connection.send_request(self)
+      else
+        Connection.open(uri.host, uri.port) do |conn|
+          @connection = conn
+
+          if block_given?
+            response = yield(self)
+          else
+            response = send_request(method)
+          end
+        end
+
+        @connection = nil
       end
 
       return response
+    end
+
+    def method=(name)
+      @method = name.to_s.upcase
     end
 
     def [](key)
@@ -86,6 +128,12 @@ module HTTP
 
     def []=(key, value)
       @headers[key] = value
+    end
+
+    def open
+      send_request do |conn|
+        yield(self)
+      end
     end
 
     private

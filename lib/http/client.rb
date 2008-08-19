@@ -7,12 +7,16 @@ module HTTP
       self.comm_inactivity_timeout = 5
     end
 
+    # TODO: notify ebb guys about following:
+    #       "GET / HTTP/1.1\r\n"
+    #       "\r\n\r\n"
+
     def send_request(request)
-      request.each do |line|
-        send_line(line)
+      request.each do |chunk|
+        puts "> %p" % chunk
+        send_data(chunk)
       end
 
-      send_line ''
       self
     end
 
@@ -40,10 +44,6 @@ module HTTP
       end
 
       EM::stop_event_loop
-    end
-
-    def send_line(line)
-      send_data "#{line}\r\n"
     end
   end
 end
