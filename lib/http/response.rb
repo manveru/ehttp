@@ -140,7 +140,8 @@ module HTTP
 
     private
 
-    STATUS = /(HTTP\/\d+\.\d+)\s+(\d\d\d)\s+(.*)\r\n/
+    # STATUS = /(HTTP\/\d+\.\d+)\s+(\d\d\d)\s+(.*?) *\r\n$/
+    STATUS = %r'^(HTTP/\d+\.\d+)\s+(\d+)\s+(.*)\s*\r\n'
 
     def parse_status
       scan(STATUS)
@@ -150,7 +151,7 @@ module HTTP
       @phrase  = @scanner[3]
     end
 
-    HEADER = /^(.*?):\s*(.*)\r\n/
+    HEADER = /^(.+):\s*(.+)\r\n/
 
     def parse_headers
       while scan(HEADER)
