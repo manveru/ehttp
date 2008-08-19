@@ -162,6 +162,8 @@ module HTTP
           value = Time.httpdate(value)
         when 'Content-Length'
           value = value.to_i
+        when 'Set-Cookie'
+          value = Util::cookie_cruncher(value)
         end
 
         @headers[key] = value
