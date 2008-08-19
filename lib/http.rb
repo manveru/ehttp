@@ -10,6 +10,7 @@ require 'eventmachine'
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'http/request'
+require 'http/request/body'
 require 'http/response'
 require 'http/header_hash'
 require 'http/connection'
